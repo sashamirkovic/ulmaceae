@@ -20,6 +20,6 @@ spec:
   - name: GitHubSecretStringKey
     value: secret
   - name: ExternalDomain
-    value: 9dcb4d531599.ngrok.io
+    value: EXTERNAL_DOMAIN
   timeout: 1000s
   serviceAccountName: tekton-triggers-createwebhook
