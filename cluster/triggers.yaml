@@ -1,0 +1,72 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: tekton-demo-triggertemplate
+  namespace: tekton-demo
+spec:
+  params:
+    - name: gitrevision
+      description: The git revision
+      default: master
+    - name: gitrepositoryurl
+      description: The git repository url
+    - name: namespace
+      description: The namespace to create the resources
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        name: tekton-demo-pipeline-run-$(uid)
+        namespace: $(tt.params.namespace)
+      spec:
+        serviceAccountName: tekton-triggers-admin
+        pipelineRef:
+          name: tekton-demo-pipeline
+        resources:
+          - name: source-repo
+            resourceSpec:
+              type: git
+              params:
+              - name: revision
+                value: $(tt.params.gitrevision)
+              - name: url
+                value: $(tt.params.gitrepositoryurl)
+          - name: image-source
+            resourceSpec:
+              type: image
+              params:
+                - name: url
+                  value: registry-docker-registry.kube-system:5000/app:tekton-demo  # docker-repo-location.com/repo:tekton-demo
+          - name: event-to-sink
+            resourceSpec:
+              type: cloudEvent
+              params:
+                - name: targetURI
+                  value: http://event-display.tekton-demo.svc.cluster.local
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: tekton-demo-pipelinebinding
+  namespace: tekton-demo
+spec:
+  params:
+    - name: gitrevision
+      value: $(body.head_commit.id)
+    - name: namespace
+      value: tekton-demo
+    - name: gitrepositoryurl
+      value: "https://github.com/$(body.repository.full_name)"
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: tekton-demo-listener
+  namespace: tekton-demo
+spec:
+  serviceAccountName: tekton-triggers-admin
+  triggers:
+    - bindings:
+      - ref: tekton-demo-pipelinebinding
+      template:
+        ref: tekton-demo-triggertemplate

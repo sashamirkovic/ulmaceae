@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: EventListener
+    app.kubernetes.io/part-of: Triggers
+    eventlistener: tekton-demo-listener
+  name: el-tekton-demo-listener-exposed
+  namespace: tekton-demo
+spec:
+  ports:
+  - name: http-listener
+    nodePort: 30300
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app.kubernetes.io/managed-by: EventListener
+    app.kubernetes.io/part-of: Triggers
+    eventlistener: tekton-demo-listener
+  sessionAffinity: None
+  type: NodePort
